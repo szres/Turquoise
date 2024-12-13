@@ -35,7 +35,7 @@ struct RuleSetListView: View {
                 } else {
                     List {
                         ForEach(endpointManager.subscriptions) { ruleSet in
-                            RuleSetRow(ruleSet: ruleSet, showSubscribeButton: true)
+                            RuleSetSubscribeRow(ruleSet: ruleSet)
                         }
                     }
                 }
@@ -67,9 +67,15 @@ struct RuleSetListView: View {
                 endpointManager.loadRuleSets(for: endpoint)
             }
         }
+        #if os(macOS)
+        .frame(minWidth: 600, minHeight: 400)
+        .navigationViewStyle(.columns)
+        #endif
     }
 }
 
 #Preview {
-    RuleSetListView()
+    NavigationView {
+        RuleSetListView(endpoint: Endpoint(name: "Test", url: "https://test.com"))
+    }
 }

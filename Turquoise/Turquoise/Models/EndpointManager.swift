@@ -42,6 +42,28 @@ struct RuleSet: Codable, Identifiable {
         lastRecordAt = try container.decodeIfPresent(Date.self, forKey: .lastRecordAt)
         isSubscribed = false  // 默认值，因为这是客户端状态
     }
+    
+    init(uuid: String, name: String, description: String, recordCount: Int, lastRecordAt: Date?, isSubscribed: Bool) {
+        self.uuid = uuid
+        self.name = name
+        self.description = description
+        self.recordCount = recordCount
+        self.lastRecordAt = lastRecordAt
+        self.isSubscribed = isSubscribed
+    }
+}
+
+extension RuleSet {
+    static var preview: RuleSet {
+        RuleSet(
+            uuid: "test-uuid",
+            name: "Test Rule",
+            description: "Test Description",
+            recordCount: 5,
+            lastRecordAt: Date(),
+            isSubscribed: true
+        )
+    }
 }
 
 enum LoadingState {

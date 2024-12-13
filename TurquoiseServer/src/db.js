@@ -63,7 +63,10 @@ export class NotificationDatabase {
             const stmt = this.db.prepare(`
                 SELECT * FROM subscribers WHERE topic = ?1
             `);
-            return await stmt.bind(topic).all();
+            const response = await stmt.bind(topic).all();
+            
+            // D1 返回的结果格式是 { results: [...] }
+            return response?.results || [];
         } catch (error) {
             log.error('Get subscribers error:', error);
             throw error;

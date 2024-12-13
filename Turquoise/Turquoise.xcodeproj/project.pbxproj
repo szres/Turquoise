@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		1BB95A422D0BCF2900FCE3FA /* privacy.md in Resources */ = {isa = PBXBuildFile; fileRef = 1BB95A412D0BCF2900FCE3FA /* privacy.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		1BB959FA2D0AFEB800FCE3FA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		1BB959E92D0AFEB600FCE3FA /* Turquoise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Turquoise.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BB959F92D0AFEB800FCE3FA /* TurquoiseTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TurquoiseTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BB95A032D0AFEB800FCE3FA /* TurquoiseUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TurquoiseUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1BB95A412D0BCF2900FCE3FA /* privacy.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = privacy.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -80,6 +85,7 @@
 		1BB959E02D0AFEB600FCE3FA = {
 			isa = PBXGroup;
 			children = (
+				1BB95A412D0BCF2900FCE3FA /* privacy.md */,
 				1BB959EB2D0AFEB600FCE3FA /* Turquoise */,
 				1BB959FC2D0AFEB800FCE3FA /* TurquoiseTests */,
 				1BB95A062D0AFEB800FCE3FA /* TurquoiseUITests */,
@@ -219,6 +225,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1BB95A422D0BCF2900FCE3FA /* privacy.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -407,6 +414,8 @@
 				DEVELOPMENT_TEAM = A6D6N85PG5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Turquoise;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -437,6 +446,8 @@
 				DEVELOPMENT_TEAM = A6D6N85PG5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Turquoise;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

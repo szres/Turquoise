@@ -7,7 +7,7 @@ class SubscriptionService {
     
     private func checkDeviceToken() throws -> String {
         guard let token = UserDefaults.standard.string(forKey: "APNSDeviceToken") else {
-            throw NetworkError.serverError("Device token not found")
+            throw NetworkError.serverError("Device token not found. Please check notification permissions.")
         }
         return token
     }
@@ -62,9 +62,9 @@ class SubscriptionService {
             throw NetworkError.invalidResponse
         }
         
-        guard (200...299).contains(httpResponse.statusCode) else {
+        if !(200...299).contains(httpResponse.statusCode) {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw NetworkError.serverError("Server returned \(httpResponse.statusCode): \(errorMessage)")
+            throw NetworkError.serverError("Failed to subscribe: \(errorMessage)")
         }
     }
     
@@ -92,9 +92,9 @@ class SubscriptionService {
             throw NetworkError.invalidResponse
         }
         
-        guard (200...299).contains(httpResponse.statusCode) else {
+        if !(200...299).contains(httpResponse.statusCode) {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw NetworkError.serverError("Server returned \(httpResponse.statusCode): \(errorMessage)")
+            throw NetworkError.serverError("Failed to unsubscribe: \(errorMessage)")
         }
     }
 }

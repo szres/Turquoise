@@ -17,13 +17,20 @@ export default {
                     return new Response('Missing required fields', { status: 400 });
                 }
 
+                log.info('Getting subscribers for topic:', topic);
                 const subscribers = await db.getSubscribers(topic);
+                log.info('Found subscribers:', subscribers);
+
                 const notifier = new Notifier(env);
                 const results = [];
 
                 for (const subscriber of subscribers) {
                     try {
                         const payload = { title, message, data };
+                        log.info('Sending notification to:', {
+                            method: subscriber.method,
+                            token: subscriber.token.substring(0, 6) + '...'
+                        });
                         
                         if (subscriber.method === 'APNS') {
                             await notifier.sendAPNS(subscriber.token, payload);
@@ -36,6 +43,7 @@ export default {
                             subscriber: subscriber.id
                         });
                     } catch (error) {
+                        log.error('Notification send error:', error);
                         results.push({
                             success: false,
                             subscriber: subscriber.id,

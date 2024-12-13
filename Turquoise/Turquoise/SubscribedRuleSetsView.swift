@@ -35,9 +35,6 @@ struct SubscribedRuleSetsView: View {
                 }
             }
             .navigationTitle("Subscribed Rules")
-            .onAppear {
-                refreshSubscriptions()
-            }
             .refreshable {
                 await refreshSubscriptions()
             }
@@ -49,70 +46,6 @@ struct SubscribedRuleSetsView: View {
             isLoading = true
             await endpointManager.syncSubscriptions()
             isLoading = false
-        }
-    }
-}
-
-struct RuleSetDetailView: View {
-    let ruleSet: RuleSet
-    @StateObject private var endpointManager = EndpointManager.shared
-    @State private var records: [PortalRecord] = []
-    @State private var isLoading = false
-    @State private var errorMessage: String?
-    
-    var body: some View {
-        Group {
-            if isLoading {
-                ProgressView()
-            } else if let error = errorMessage {
-                VStack {
-                    Text("Error loading records")
-                        .font(.headline)
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Button("Retry") {
-                        loadRecords()
-                    }
-                    .buttonStyle(.bordered)
-                }
-            } else if records.isEmpty {
-                Text("No records found")
-                    .foregroundColor(.secondary)
-            } else {
-                List(records) { record in
-                    RecordRow(record: record)
-                }
-            }
-        }
-        .navigationTitle(ruleSet.name)
-        .onAppear {
-            loadRecords()
-        }
-    }
-    
-    private func loadRecords() {
-        guard let endpoint = endpointManager.endpoints.first else { return }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        Task {
-            do {
-                let newRecords = try await NetworkService.shared.fetchRuleSetRecords(
-                    endpoint: endpoint,
-                    ruleSetId: ruleSet.uuid
-                )
-                await MainActor.run {
-                    records = newRecords
-                    isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = error.localizedDescription
-                    isLoading = false
-                }
-            }
         }
     }
 }

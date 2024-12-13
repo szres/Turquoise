@@ -1,56 +1,84 @@
 import { log } from './utils';
-import jwt from 'jsonwebtoken';
 
 export class Notifier {
     constructor(env) {
         this.env = env;
-        this.apnsJWT = null;
-        this.apnsJWTExpiry = null;
     }
 
-    // 生成 APNS JWT token
-    async getAPNSToken() {
+    async generateToken() {
         try {
-            // 检查现有 token 是否有效
-            if (this.apnsJWT && this.apnsJWTExpiry && Date.now() < this.apnsJWTExpiry) {
-                return this.apnsJWT;
-            }
-
             // 验证必要的环境变量
             if (!this.env.APNS_KEY_ID || !this.env.APNS_TEAM_ID || !this.env.APNS_PRIVATE_KEY) {
                 throw new Error('Missing APNS configuration');
             }
 
-            // 生成新的 JWT token
+            // 准备 JWT header 和 payload
             const header = {
                 alg: 'ES256',
                 kid: this.env.APNS_KEY_ID
             };
 
-            const claims = {
+            const payload = {
                 iss: this.env.APNS_TEAM_ID,
                 iat: Math.floor(Date.now() / 1000)
             };
 
-            const token = jwt.sign(claims, this.env.APNS_PRIVATE_KEY, {
-                algorithm: 'ES256',
-                header: header
-            });
+            // Base64Url 编码
+            const encodedHeader = btoa(JSON.stringify(header)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            const encodedPayload = btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-            // 设置 token 和过期时间（50分钟后过期）
-            this.apnsJWT = token;
-            this.apnsJWTExpiry = Date.now() + 50 * 60 * 1000;
+            // 创建签名内容
+            const signatureInput = `${encodedHeader}.${encodedPayload}`;
 
-            return token;
+            // 导入私钥
+            const keyData = this.env.APNS_PRIVATE_KEY
+                .replace(/-----BEGIN PRIVATE KEY-----/, '')
+                .replace(/-----END PRIVATE KEY-----/, '')
+                .replace(/\s/g, '');
+
+            const binaryKey = Uint8Array.from(atob(keyData), c => c.charCodeAt(0));
+            const privateKey = await crypto.subtle.importKey(
+                'pkcs8',
+                binaryKey,
+                {
+                    name: 'ECDSA',
+                    namedCurve: 'P-256'
+                },
+                false,
+                ['sign']
+            );
+
+            // 签名
+            const encoder = new TextEncoder();
+            const signatureBytes = await crypto.subtle.sign(
+                { name: 'ECDSA', hash: 'SHA-256' },
+                privateKey,
+                encoder.encode(signatureInput)
+            );
+
+            // 编码签名
+            const signature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=+$/, '');
+
+            // 组合 JWT
+            return `${signatureInput}.${signature}`;
         } catch (error) {
-            log.error('APNS token generation error:', error);
+            log.error('Token generation error:', error);
             throw error;
         }
     }
 
     async sendAPNS(token, payload) {
         try {
-            const apnsToken = await this.getAPNSToken();
+            const apnsToken = await this.generateToken();
+            const host = this.env.APNS_PRODUCTION === 'true' 
+                ? 'api.push.apple.com'
+                : 'api.sandbox.push.apple.com';
+
+            const url = `https://${host}/3/device/${token}`;
+            
             const apnsPayload = {
                 aps: {
                     alert: {
@@ -63,13 +91,6 @@ export class Notifier {
                 },
                 ...payload.data
             };
-
-            // 使用生产或开发环境的 APNS 服务器
-            const host = this.env.APNS_PRODUCTION === 'true' 
-                ? 'api.push.apple.com'
-                : 'api.sandbox.push.apple.com';
-
-            const url = `https://${host}/3/device/${token}`;
 
             const response = await fetch(url, {
                 method: 'POST',

@@ -25,10 +25,14 @@ struct ContentView: View {
                     Label("Settings", systemImage: "gear")
                 }
         }
+        #if os(macOS)
+        .frame(minWidth: 800, minHeight: 500)
+        #endif
     }
 }
 
 #Preview {
     ContentView()
+        .preferredColorScheme(.light)
 }
 

@@ -1,19 +1,34 @@
 import Foundation
 
-enum NetworkError: Error {
+enum NetworkError: LocalizedError {
     case invalidURL
     case invalidResponse
     case decodingError
     case serverError(String)
+    
+    var errorDescription: String? {
+        switch self {
+        case .invalidURL:
+            return "Invalid URL. Please check the endpoint configuration."
+        case .invalidResponse:
+            return "Server returned an invalid response. Please try again later."
+        case .decodingError:
+            return "Failed to process server response. Please try again."
+        case .serverError(let message):
+            return "Server error: \(message)"
+        }
+    }
 }
 
-struct RuleSetResponse: Codable {
+struct RuleSetListResponse: Codable {
     let success: Bool
     let data: [RuleSet]
 }
 
 class NetworkService {
     static let shared = NetworkService()
+    private let turquoiseServer = "https://turquoise.szres.org"
+    
     private init() {}
     
     private func buildURL(baseURL: String, path: String) -> URL? {
@@ -66,7 +81,7 @@ class NetworkService {
                         debugDescription: "Cannot decode date string \(dateStr)"
                     )
                 }
-                let result = try decoder.decode(RuleSetResponse.self, from: data)
+                let result = try decoder.decode(RuleSetListResponse.self, from: data)
                 print("✅ Successfully decoded response with \(result.data.count) rulesets")
                 return result.data
             } catch {
