@@ -81,6 +81,58 @@ class NetworkService {
             throw error
         }
     }
+    
+    func fetchRuleSetRecords(endpoint: Endpoint, ruleSetId: String) async throws -> [PortalRecord] {
+        guard let url = buildURL(baseURL: endpoint.url, path: "/ruleset/\(ruleSetId)") else {
+            throw NetworkError.invalidURL
+        }
+        
+        print("📡 Fetching records from URL: \(url.absoluteString)")
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("📦 Received data: \(responseString)")
+        }
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NetworkError.invalidResponse
+        }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw NetworkError.serverError("Server returned \(httpResponse.statusCode): \(errorMessage)")
+        }
+        
+        let decoder = JSONDecoder()
+        // 使用 ISO8601DateFormatter 来处理带毫秒和 Z 后缀的时间戳
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateStr = try container.decode(String.self)
+            
+            // 首先尝试解析完整的 ISO8601 格式
+            if let date = formatter.date(from: dateStr) {
+                return date
+            }
+            
+            // 如果失败，尝试使用简单格式
+            if let date = DateFormatter.iso8601Full.date(from: dateStr) {
+                return date
+            }
+            
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Cannot decode date string \(dateStr)"
+            )
+        }
+        
+        let result = try decoder.decode(PortalRecordResponse.self, from: data)
+        print("✅ Successfully decoded \(result.data.count) records")
+        return result.data
+    }
 }
 
 extension DateFormatter {

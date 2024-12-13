@@ -56,14 +56,17 @@ class EndpointManager: ObservableObject {
     
     @Published private(set) var endpoints: [Endpoint] = []
     @Published private(set) var subscriptions: [RuleSet] = []
+    @Published private(set) var subscribedTopics: [String] = []
     @Published private(set) var loadingState: LoadingState = .idle
     
     private let endpointsKey = "savedEndpoints"
     private let subscriptionsKey = "savedSubscriptions"
+    private let subscribedTopicsKey = "subscribedTopics"
     
     init() {
         loadEndpoints()
         loadSubscriptions()
+        loadSubscribedTopics()
     }
     
     // MARK: - Endpoints Management
@@ -119,6 +122,44 @@ class EndpointManager: ObservableObject {
         }
     }
     
+    // MARK: - Subscribed Topics Management
+    private func loadSubscribedTopics() {
+        if let data = UserDefaults.standard.data(forKey: subscribedTopicsKey),
+           let topics = try? JSONDecoder().decode([String].self, from: data) {
+            subscribedTopics = topics
+            updateSubscriptionStates()
+        }
+    }
+    
+    private func saveSubscribedTopics() {
+        if let encoded = try? JSONEncoder().encode(subscribedTopics) {
+            UserDefaults.standard.set(encoded, forKey: subscribedTopicsKey)
+        }
+    }
+    
+    private func updateSubscriptionStates() {
+        var updatedSubscriptions = subscriptions
+        for (index, subscription) in updatedSubscriptions.enumerated() {
+            updatedSubscriptions[index].isSubscribed = subscribedTopics.contains(subscription.uuid)
+        }
+        self.subscriptions = updatedSubscriptions
+        saveSubscriptions()
+    }
+    
+    func syncSubscriptions() async {
+        do {
+            let topics = try await SubscriptionService.shared.fetchSubscribedTopics()
+            
+            await MainActor.run {
+                self.subscribedTopics = topics
+                saveSubscribedTopics()
+                updateSubscriptionStates()
+            }
+        } catch {
+            print("Failed to sync subscriptions: \(error)")
+        }
+    }
+    
     func loadRuleSets(for endpoint: Endpoint) {
         Task { @MainActor in
             loadingState = .loading
@@ -133,12 +174,7 @@ class EndpointManager: ObservableObject {
                 // 处理当前端点的规则集
                 let currentEndpointRuleSets = ruleSets.map { ruleSet in
                     var updatedRuleSet = ruleSet
-                    // 如果之前订阅过，保持订阅状态
-                    if let existingRuleSet = subscriptions.first(where: { $0.uuid == ruleSet.uuid }) {
-                        updatedRuleSet.isSubscribed = existingRuleSet.isSubscribed
-                    } else {
-                        updatedRuleSet.isSubscribed = false
-                    }
+                    updatedRuleSet.isSubscribed = subscribedTopics.contains(ruleSet.uuid)
                     return updatedRuleSet
                 }
                 
@@ -171,5 +207,20 @@ class EndpointManager: ObservableObject {
     func retryLoadRuleSets(for endpoint: Endpoint) {
         loadingState = .idle
         loadRuleSets(for: endpoint)
+    }
+    
+    func updateEndpoint(_ endpoint: Endpoint, name: String, url: String) {
+        if let index = endpoints.firstIndex(where: { $0.id == endpoint.id }) {
+            var updatedEndpoint = endpoint
+            updatedEndpoint.name = name
+            updatedEndpoint.url = url
+            endpoints[index] = updatedEndpoint
+            saveEndpoints()
+        }
+    }
+    
+    func removeEndpoint(_ endpoint: Endpoint) {
+        endpoints.removeAll { $0.id == endpoint.id }
+        saveEndpoints()
     }
 } 

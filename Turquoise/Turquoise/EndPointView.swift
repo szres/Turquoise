@@ -10,6 +10,7 @@ import SwiftData
 
 struct EndPointView: View {
     @StateObject private var endpointManager = EndpointManager.shared
+    @State private var isSyncing = false
     
     var body: some View {
         NavigationView {
@@ -27,14 +28,25 @@ struct EndPointView: View {
                 }
             }
             .navigationTitle("Subscribe")
+            .overlay {
+                if isSyncing {
+                    ProgressView()
+                }
+            }
             .onAppear {
-                // 当页面出现时，刷新所有端点的规则集
-                for endpoint in endpointManager.endpoints {
-                    endpointManager.loadRuleSets(for: endpoint)
+                // 当页面出现时，同步订阅状态并刷新所有端点的规则集
+                Task {
+                    isSyncing = true
+                    await endpointManager.syncSubscriptions()
+                    for endpoint in endpointManager.endpoints {
+                        endpointManager.loadRuleSets(for: endpoint)
+                    }
+                    isSyncing = false
                 }
             }
             .refreshable {
-                // 下拉刷新时，刷新所有端点的规则集
+                // 下拉刷新时，同步订阅状态并刷新所有端点的规则集
+                await endpointManager.syncSubscriptions()
                 for endpoint in endpointManager.endpoints {
                     endpointManager.loadRuleSets(for: endpoint)
                 }

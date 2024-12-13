@@ -10,14 +10,14 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            RuleSetListView()
+            NotificationView()
                 .tabItem {
-                    Label("Rules", systemImage: "list.bullet")
+                    Label("Notifications", systemImage: "bell")
                 }
-            
-            EndPointView()
+                
+            SubscriptionListView()
                 .tabItem {
-                    Label("Subscribe", systemImage: "plus.circle")
+                    Label("Subscribed", systemImage: "list.bullet")
                 }
             
             SettingsView()

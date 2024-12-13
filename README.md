@@ -52,6 +52,47 @@ Response:
 
 Turquoise 服务器处理所有通知的订阅和推送。
 
+#### 获取订阅列表
+```http
+GET /subscriptions?method=APNS&token=device-token
+```
+
+查询参数：
+| 参数 | 类型 | 必填 | 描述 |
+|------|------|------|------|
+| method | string | 是 | 推送服务类型（如 "APNS"） |
+| token | string | 是 | 设备推送令牌 |
+
+响应：
+```json
+{
+    "success": true,
+    "data": [
+        "rule-set-uuid-1",
+        "rule-set-uuid-2",
+        "rule-set-uuid-3"
+    ]
+}
+```
+
+错误响应：
+```json
+{
+    "success": false,
+    "error": {
+        "code": "INVALID_METHOD",
+        "message": "Unsupported push notification method"
+    }
+}
+```
+
+错误码：
+| 错误码 | HTTP 状态码 | 描述 |
+|--------|-------------|------|
+| INVALID_METHOD | 400 | 不支持的推送服务类型 |
+| INVALID_TOKEN | 400 | 无效的设备令牌 |
+| SERVER_ERROR | 500 | 服务器内部错误 |
+
 #### 订阅通知
 ```http
 POST /subscribe

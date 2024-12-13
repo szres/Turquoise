@@ -36,4 +36,32 @@ final class RuleSetModel {
         self.createdAt = Date()
         self.isSubscribed = false
     }
+}
+
+// 添加新的数据模型
+struct PortalRecord: Codable, Identifiable {
+    let id: Int
+    let portalName: String
+    let portalAddress: String
+    let latitude: Double
+    let longitude: Double
+    let agentName: String
+    let timestamp: Date
+    let meetRuleSets: [String]
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case portalName = "portal_name"
+        case portalAddress = "portal_address"
+        case latitude
+        case longitude
+        case agentName = "agent_name"
+        case timestamp
+        case meetRuleSets = "meet_rule_sets"
+    }
+}
+
+struct PortalRecordResponse: Codable {
+    let success: Bool
+    let data: [PortalRecord]
 } 

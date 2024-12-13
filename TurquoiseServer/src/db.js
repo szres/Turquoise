@@ -69,4 +69,23 @@ export class NotificationDatabase {
             throw error;
         }
     }
+
+    async getSubscriptionsByToken(method, token) {
+        try {
+            const stmt = this.db.prepare(`
+                SELECT topic 
+                FROM subscribers 
+                WHERE method = ?1 
+                AND token = ?2
+            `);
+            const response = await stmt.bind(method, token).all();
+            
+            // D1 返回的结果格式是 { results: [...] }
+            const results = response?.results || [];
+            return results.map(row => row.topic);
+        } catch (error) {
+            log.error('Get subscriptions error:', error);
+            throw error;
+        }
+    }
 } 
