@@ -67,7 +67,6 @@ We may update this privacy policy occasionally. Significant changes will be noti
 
 For privacy concerns or questions:
 - Email: privacy@szres.org
-- Website: https://szres.org
 
 ## Compliance
 
