@@ -1,58 +1,20 @@
 # Turquoise
 
-Turquoise 是一个通知聚合服务，支持从多个数据源订阅通知并通过 APNS 推送到 iOS 设备。它允许用户管理多个数据源端点，并为每个端点的规则集单独设置订阅。
+Turquoise 是一个通知聚合服务，支持从多个数据源订阅通知并通过多种方式推送到移动设备。目前支持 APNS (iOS) 和 NTFY 推送服务。
 
-## 数据源集成
+## 功能特性
 
-### 端点要求
+- 支持多种推送方式
+  - APNS (iOS 设备)
+  - NTFY (官方服务器和自托管)
+- 灵活的订阅管理
+- 支持自定义通知格式
+- 完整的错误处理和日志记录
 
-要集成新的数据源，需要实现以下 API 端点：
+## API 文档
 
-#### 获取规则集列表
-```http
-GET /rulesets
-```
+### 获取订阅列表
 
-Response:
-```json
-{
-    "success": true,
-    "data": [
-        {
-            "uuid": "unique-rule-set-id",
-            "name": "Rule Set Name",
-            "description": "Rule Set Description",
-            "rules": [
-                {
-                    "type": "string",
-                    "value": "string",
-                    "center": {
-                        "lat": 0.0,
-                        "lng": 0.0
-                    },
-                    "radius": 0.0,
-                    "points": [
-                        {
-                            "lat": 0.0,
-                            "lng": 0.0
-                        }
-                    ]
-                }
-            ],
-            "record_count": 0,
-            "last_record_at": "yyyy-MM-dd HH:mm:ss",
-            "created_at": "yyyy-MM-dd HH:mm:ss",
-            "updated_at": "yyyy-MM-dd HH:mm:ss"
-        }
-    ]
-}
-```
-
-### Turquoise Server API
-
-Turquoise 服务器处理所有通知的订阅和推送。
-
-#### 获取订阅列表
 ```http
 GET /subscriptions?method=APNS&token=device-token
 ```
@@ -60,17 +22,16 @@ GET /subscriptions?method=APNS&token=device-token
 查询参数：
 | 参数 | 类型 | 必填 | 描述 |
 |------|------|------|------|
-| method | string | 是 | 推送服务类型（如 "APNS"） |
-| token | string | 是 | 设备推送令牌 |
+| method | string | 是 | 推送服务类型（APNS 或 NTFY） |
+| token | string | 是 | 设备令牌或 NTFY 配置 |
 
-响应：
+响应示例：
 ```json
 {
     "success": true,
     "data": [
-        "rule-set-uuid-1",
-        "rule-set-uuid-2",
-        "rule-set-uuid-3"
+        "ruleset-12345678",
+        "ruleset-87654321"
     ]
 }
 ```
@@ -81,119 +42,166 @@ GET /subscriptions?method=APNS&token=device-token
     "success": false,
     "error": {
         "code": "INVALID_METHOD",
-        "message": "Unsupported push notification method"
+        "message": "不支持的推送方法"
     }
 }
 ```
 
-错误码：
-| 错误码 | HTTP 状态码 | 描述 |
-|--------|-------------|------|
-| INVALID_METHOD | 400 | 不支持的推送服务类型 |
-| INVALID_TOKEN | 400 | 无效的设备令牌 |
-| SERVER_ERROR | 500 | 服务器内部错误 |
+### 订阅通知
 
-#### 订阅通知
 ```http
 POST /subscribe
 Content-Type: application/json
 
 {
-    "topic": "rule-set-uuid",
-    "method": "APNS",
-    "token": "device-token"
+    "topic": "ruleset-id",
+    "method": "APNS|NTFY",
+    "token": "device-token-or-ntfy-config"
 }
 ```
 
-#### 取消订阅
-```http
-POST /unsubscribe
-Content-Type: application/json
+#### APNS 订阅示例
 
+```json
 {
-    "topic": "rule-set-uuid",
+    "topic": "ruleset-id",
     "method": "APNS",
     "token": "device-token"
 }
 ```
 
-#### 发送通知
+#### NTFY 订阅示例
+
+1. 使用官方服务器：
+```json
+{
+    "topic": "ruleset-id",
+    "method": "NTFY",
+    "token": "notification-topic"
+}
+```
+
+2. 使用自托管服务器：
+```json
+{
+    "topic": "ruleset-id",
+    "method": "NTFY",
+    "token": {
+        "topic": "notification-topic",
+        "server": "https://ntfy.example.com",
+        "auth": "认证信息"  // 可选
+    }
+}
+```
+
+### 发送通知
+
 ```http
 POST /notify
 Content-Type: application/json
 
 {
-    "topic": "rule-set-uuid",
+    "topic": "ruleset-id",
     "title": "通知标题",
     "message": "通知内容",
     "data": {
+        "type": "notification-type",
+        "priority": 3,
+        "url": "https://example.com",
+        "coordinates": {
+            "lat": 123.456,
+            "lng": 789.012
+        },
         "custom": "metadata"
     }
 }
 ```
 
-## iOS 客户端功能
+### NTFY 认证配置
 
-- 管理多个数据源端点
-- 自动获取并显示每个端点的规则集
-- 支持订阅/取消订阅规则集
-- 自动处理 APNS 注册和权限管理
-- 使用 SwiftData 进行本地数据持久化
+NTFY 支持两种认证方式：
 
-### 系统要求
+1. Access Token:
+```json
+{
+    "auth": "tk_myaccesstoken"
+}
+```
 
-- iOS 17.0+
-- Xcode 15.0+
-- Swift 5.9+
+2. 用户名密码:
+```json
+{
+    "auth": "username:password"
+}
+```
 
-### 安装
+## 安全说明
+
+- 所有认证信息都经过安全存储
+- 支持 HTTPS 加密传输
+- 完整的错误处理机制
+- 详细的日志记录（不包含敏感信息）
+
+## 部署要求
+
+### 环境变量
+
+```toml
+# APNS 配置
+APNS_TOPIC = "your.app.bundle.id"
+APNS_PRODUCTION = "true|false"
+APNS_KEY_ID = "your-key-id"
+APNS_TEAM_ID = "your-team-id"
+APNS_PRIVATE_KEY = "your-private-key"
+
+# NTFY 配置（可选）
+NTFY_DEFAULT_SERVER = "https://ntfy.sh"
+```
+
+### 数据库
+
+使用 Cloudflare D1 数据库存储订阅信息：
+
+```sql
+CREATE TABLE subscribers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic TEXT NOT NULL,
+    method TEXT NOT NULL CHECK (method IN ('APNS', 'NTFY')),
+    token TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(topic, method, token)
+);
+```
+
+## 错误处理
+
+所有 API 响应都遵循统一格式：
+
+```json
+// 成功响应
+{
+    "success": true,
+    "data": {}
+}
+
+// 错误响应
+{
+    "success": false,
+    "error": {
+        "code": "ERROR_CODE",
+        "message": "错误描述"
+    }
+}
+```
+
+## 开发说明
 
 1. 克隆仓库
-```bash
-git clone https://github.com/yourusername/Turquoise.git
-```
-
-2. 打开 Xcode 项目
-```bash
-cd Turquoise
-open Turquoise.xcodeproj
-```
-
-3. 配置开发者账号和推送证书
-
-4. 运行应用
-
-### 使用方法
-
-1. 首次启动时允许通知权限
-2. 添加数据源端点
-3. 查看可用的规则集
-4. 订阅感兴趣的规则集
-5. 等待通知推送
-
-## 技术栈
-
-- SwiftUI
-- SwiftData
-- UserNotifications
-- Async/Await
-- CloudFlare Workers (服务端)
-
-## 架构
-
-- Models: 使用 SwiftData 管理数据模型
-- Views: SwiftUI 视图层
-- Services: 网络服务和通知管理
-- App: 应用程序生命周期和环境配置
-
-## 开发
-
-### 添加新的数据源
-
-1. 实现 `/rulesets` 端点，返回符合规范的 JSON 格式
-2. 确保规则集包含所有必要字段
-3. 实现通知触发逻辑，调用 Turquoise Server 的 `/notify` 端点
+2. 安装依赖
+3. 配置环境变量
+4. 部署到 Cloudflare Workers
 
 ## 许可证
 
-[Your License] 
+MIT License

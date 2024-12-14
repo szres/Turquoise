@@ -124,27 +124,71 @@ export class Notifier {
         }
     }
 
-    async sendNTFY(token, payload) {
+    async sendNTFY(subscriber, payload) {
         try {
-            const response = await fetch(`https://ntfy.sh/${token}`, {
+            // 解析 token 中的 NTFY 配置
+            let ntfyConfig;
+            try {
+                ntfyConfig = JSON.parse(subscriber.token);
+            } catch (error) {
+                // 如果不是 JSON，则视为纯 topic
+                ntfyConfig = {
+                    topic: subscriber.token,
+                    server: 'https://ntfy.sh',
+                    auth: null  // 默认无认证
+                };
+            }
+
+            const { topic, server = 'https://ntfy.sh', auth } = ntfyConfig;
+            
+            // 构建完整的 URL
+            const url = `${server}/${topic}`;
+
+            // 准备通知数据
+            const ntfyPayload = {
+                topic: topic,
+                title: payload.title,
+                message: payload.message,
+                priority: this._getPriority(payload),
+                tags: this._getTags(payload),
+                click: payload.data?.url,
+                actions: this._getActions(payload)
+            };
+
+            // 准备请求头
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            // 添加认证头
+            if (auth) {
+                if (auth.startsWith('tk_')) {
+                    // 如果是 token
+                    headers['Authorization'] = `Bearer ${auth}`;
+                } else if (auth.includes(':')) {
+                    // 如果是用户名密码
+                    const authString = Buffer.from(auth).toString('base64');
+                    headers['Authorization'] = `Basic ${authString}`;
+                }
+            }
+
+            // 发送通知
+            const response = await fetch(url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    topic: token,
-                    title: payload.title,
-                    message: payload.message,
-                    priority: payload.priority || 3,
-                    tags: payload.tags || []
-                })
+                headers: headers,
+                body: JSON.stringify(ntfyPayload)
             });
 
             if (!response.ok) {
-                throw new Error(`NTFY send failed: ${response.statusText}`);
+                const error = await response.text();
+                throw new Error(`NTFY send failed: ${error}`);
             }
 
-            log.info('NTFY notification sent successfully');
+            log.info('NTFY notification sent successfully', {
+                server,
+                topic,
+                title: payload.title
+            });
         } catch (error) {
             log.error('NTFY send error:', error);
             throw error;
