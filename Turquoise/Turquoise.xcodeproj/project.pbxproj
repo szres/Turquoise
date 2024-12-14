@@ -34,9 +34,22 @@
 		1BB95A412D0BCF2900FCE3FA /* privacy.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = privacy.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1B773D8C2D0D5C1300F0E990 /* Exceptions for "Turquoise" folder in "Turquoise" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1BB959E82D0AFEB600FCE3FA /* Turquoise */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1BB959EB2D0AFEB600FCE3FA /* Turquoise */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1B773D8C2D0D5C1300F0E990 /* Exceptions for "Turquoise" folder in "Turquoise" target */,
+			);
 			path = Turquoise;
 			sourceTree = "<group>";
 		};
@@ -414,8 +427,10 @@
 				DEVELOPMENT_TEAM = A6D6N85PG5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Turquoise/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Turquoise;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to scan QR codes for adding endpoints.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -446,8 +461,10 @@
 				DEVELOPMENT_TEAM = A6D6N85PG5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Turquoise/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Turquoise;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSCameraUsageDescription = "We need access to your camera to scan QR codes for adding endpoints.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

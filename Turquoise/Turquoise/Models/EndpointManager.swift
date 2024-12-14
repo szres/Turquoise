@@ -56,6 +56,7 @@ class EndpointManager: ObservableObject {
             loadingState = .loading
             do {
                 let networkRuleSets = try await NetworkService.shared.fetchRuleSets(from: endpoint)
+                print("📱 Received \(networkRuleSets.count) rulesets")
                 
                 // 更新或创建规则集
                 for networkRuleSet in networkRuleSets {
@@ -63,18 +64,26 @@ class EndpointManager: ObservableObject {
                         predicate: #Predicate<RuleSet> { $0.uuid == networkRuleSet.uuid }
                     )
                     
+                    let dateFormatter = DateFormatter()
+                    dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    
+                    let lastRecordDate = networkRuleSet.lastRecordAt.flatMap { dateFormatter.date(from: $0) }
+                    
                     if let existingRuleSet = try modelContext?.fetch(fetchDescriptor).first {
+                        print("📝 Updating ruleset: \(networkRuleSet.name) with endpointID: \(endpoint.id)")
                         existingRuleSet.name = networkRuleSet.name
                         existingRuleSet.ruleDescription = networkRuleSet.description
                         existingRuleSet.recordCount = networkRuleSet.recordCount
-                        existingRuleSet.lastRecordAt = networkRuleSet.lastRecordAt
+                        existingRuleSet.lastRecordAt = lastRecordDate
+                        existingRuleSet.endpointID = endpoint.id
                     } else {
+                        print("➕ Creating new ruleset: \(networkRuleSet.name) with endpointID: \(endpoint.id)")
                         let newRuleSet = RuleSet(
                             uuid: networkRuleSet.uuid,
                             name: networkRuleSet.name,
                             description: networkRuleSet.description,
                             recordCount: networkRuleSet.recordCount,
-                            lastRecordAt: networkRuleSet.lastRecordAt,
+                            lastRecordAt: lastRecordDate,
                             isSubscribed: false,
                             endpointID: endpoint.id
                         )
@@ -83,11 +92,14 @@ class EndpointManager: ObservableObject {
                 }
                 
                 try modelContext?.save()
+                print("💾 Saved all rulesets")
                 loadingState = .loaded
                 
             } catch let error as NetworkError {
+                print("❌ Network error: \(error.localizedDescription)")
                 loadingState = .error(error.localizedDescription)
             } catch {
+                print("❌ Other error: \(error.localizedDescription)")
                 loadingState = .error("Failed to load rule sets: \(error.localizedDescription)")
             }
         }

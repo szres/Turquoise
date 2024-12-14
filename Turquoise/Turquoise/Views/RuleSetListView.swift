@@ -10,6 +10,7 @@ struct RuleSetListView: View {
     init(endpoint: Endpoint) {
         self.endpoint = endpoint
         let endpointID = endpoint.id
+        print("🔍 Querying rulesets for endpoint: \(endpoint.name)")
         self._ruleSets = Query(
             filter: #Predicate<RuleSet> { ruleSet in
                 ruleSet.endpointID == endpointID
