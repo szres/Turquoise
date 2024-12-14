@@ -4,5 +4,10 @@
 <dict>
 	<key>aps-environment</key>
 	<string>development</string>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:turquoise.szres.org</string>
+		<string>applinks:turquoise.szres.org?mode=developer</string>
+	</array>
 </dict>
 </plist>

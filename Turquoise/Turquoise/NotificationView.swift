@@ -1,15 +1,14 @@
 import SwiftUI
+import SwiftData
 #if os(macOS)
 import AppKit
 #endif
 
 struct NotificationView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(filter: #Predicate<RuleSet> { $0.isSubscribed }) private var subscribedRuleSets: [RuleSet]
     @StateObject private var endpointManager = EndpointManager.shared
     @State private var isLoading = false
-    
-    var subscribedRuleSets: [RuleSet] {
-        endpointManager.subscriptions.filter { $0.isSubscribed }
-    }
     
     var body: some View {
         NavigationView {
@@ -57,14 +56,15 @@ struct NotificationView: View {
         .frame(minWidth: 600, minHeight: 400)
         .navigationViewStyle(.columns)
         #endif
+        .onAppear {
+            endpointManager.setModelContext(modelContext)
+        }
     }
     
-    private func refreshSubscriptions() {
-        Task {
-            isLoading = true
-            await endpointManager.syncSubscriptions()
-            isLoading = false
-        }
+    private func refreshSubscriptions() async {
+        isLoading = true
+        await endpointManager.syncSubscriptions()
+        isLoading = false
     }
 }
 

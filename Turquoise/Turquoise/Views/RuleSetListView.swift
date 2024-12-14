@@ -1,16 +1,22 @@
-//
-//  RuleSetListView.swift
-//  Turquoise
-//
-//  Created by 罗板栗 on 2024/12/12.
-//
-
 import SwiftUI
+import SwiftData
 
 struct RuleSetListView: View {
-    var endpoint: Endpoint?
+    let endpoint: Endpoint
+    @Environment(\.modelContext) private var modelContext
+    @Query private var ruleSets: [RuleSet]
     @StateObject private var endpointManager = EndpointManager.shared
-    @State private var isRefreshing = false
+    
+    init(endpoint: Endpoint) {
+        self.endpoint = endpoint
+        let endpointID = endpoint.id
+        self._ruleSets = Query(
+            filter: #Predicate<RuleSet> { ruleSet in
+                ruleSet.endpointID == endpointID
+            },
+            sort: [SortDescriptor(\RuleSet.name)]
+        )
+    }
     
     var body: some View {
         Group {
@@ -20,7 +26,7 @@ struct RuleSetListView: View {
                     .scaleEffect(1.5)
                     .padding()
             case .loaded:
-                if endpointManager.subscriptions.isEmpty {
+                if ruleSets.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "bell.slash")
                             .font(.system(size: 48))
@@ -34,7 +40,7 @@ struct RuleSetListView: View {
                     .padding()
                 } else {
                     List {
-                        ForEach(endpointManager.subscriptions) { ruleSet in
+                        ForEach(ruleSets) { ruleSet in
                             RuleSetSubscribeRow(ruleSet: ruleSet)
                         }
                     }
@@ -47,35 +53,26 @@ struct RuleSetListView: View {
                     Text(message)
                         .multilineTextAlignment(.center)
                     Button("Retry") {
-                        if let endpoint = endpoint {
-                            endpointManager.loadRuleSets(for: endpoint)
-                        }
+                        endpointManager.loadRuleSets(for: endpoint)
                     }
                     .buttonStyle(.bordered)
                 }
                 .padding()
             }
         }
-        .navigationTitle(endpoint?.name ?? "Turquoise")
+        .navigationTitle(endpoint.name)
         .refreshable {
-            if let endpoint = endpoint {
-                endpointManager.loadRuleSets(for: endpoint)
-            }
+            endpointManager.loadRuleSets(for: endpoint)
         }
         .onAppear {
-            if let endpoint = endpoint {
-                endpointManager.loadRuleSets(for: endpoint)
-            }
+            endpointManager.setModelContext(modelContext)
+            endpointManager.loadRuleSets(for: endpoint)
         }
-        #if os(macOS)
-        .frame(minWidth: 600, minHeight: 400)
-        .navigationViewStyle(.columns)
-        #endif
     }
 }
 
 #Preview {
     NavigationView {
-        RuleSetListView(endpoint: Endpoint(name: "Test", url: "https://test.com"))
+        RuleSetListView(endpoint: .preview)
     }
-}
+} 

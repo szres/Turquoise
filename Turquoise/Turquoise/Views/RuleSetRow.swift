@@ -13,7 +13,7 @@ struct RuleSetRow: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-            Text(ruleSet.description)
+            Text(ruleSet.ruleDescription)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }

@@ -1,16 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct RuleSetSubscribeRow: View {
-    let ruleSet: RuleSet
+    @Bindable var ruleSet: RuleSet
     @StateObject private var endpointManager = EndpointManager.shared
-    @State private var isSubscribed: Bool
     @State private var isUpdating = false
     @State private var errorMessage: String?
-    
-    init(ruleSet: RuleSet) {
-        self.ruleSet = ruleSet
-        self._isSubscribed = State(initialValue: ruleSet.isSubscribed)
-    }
     
     var body: some View {
         VStack(alignment: .leading) {
@@ -22,16 +17,16 @@ struct RuleSetSubscribeRow: View {
                     ProgressView()
                         .controlSize(.small)
                 } else {
-                    Toggle("", isOn: $isSubscribed)
+                    Toggle("", isOn: $ruleSet.isSubscribed)
                         .labelsHidden()
                         .tint(.green)
-                        .onChange(of: isSubscribed) {
+                        .onChange(of: ruleSet.isSubscribed) {
                             updateSubscription()
                         }
                 }
             }
             
-            Text(ruleSet.description)
+            Text(ruleSet.ruleDescription)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
@@ -59,11 +54,24 @@ struct RuleSetSubscribeRow: View {
         .alert("Subscription Error", isPresented: .constant(errorMessage != nil)) {
             Button("OK") {
                 errorMessage = nil
-                isSubscribed.toggle()  // 恢复原始状态
+                ruleSet.isSubscribed.toggle()  // 恢复原始状态
             }
         } message: {
             if let errorMessage = errorMessage {
                 Text(errorMessage)
+            }
+        }
+        .onAppear {
+            Task {
+                do {
+                    let topics = try await SubscriptionService.shared.fetchSubscribedTopics()
+                    await MainActor.run {
+                        ruleSet.isSubscribed = topics.contains(ruleSet.uuid)
+                        endpointManager.updateRuleSet(ruleSet)
+                    }
+                } catch {
+                    print("Failed to sync subscription status: \(error)")
+                }
             }
         }
     }
@@ -72,21 +80,20 @@ struct RuleSetSubscribeRow: View {
         isUpdating = true
         Task {
             do {
-                if isSubscribed {
+                if ruleSet.isSubscribed {
                     try await SubscriptionService.shared.subscribe(ruleSetId: ruleSet.uuid)
                 } else {
                     try await SubscriptionService.shared.unsubscribe(ruleSetId: ruleSet.uuid)
                 }
                 
                 await MainActor.run {
-                    var updatedRuleSet = ruleSet
-                    updatedRuleSet.isSubscribed = isSubscribed
-                    endpointManager.updateSubscription(updatedRuleSet)
+                    endpointManager.updateRuleSet(ruleSet)
                     isUpdating = false
                 }
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription
+                    ruleSet.isSubscribed.toggle()  // 恢复原始状态
                     isUpdating = false
                 }
             }

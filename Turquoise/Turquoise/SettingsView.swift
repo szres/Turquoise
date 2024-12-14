@@ -6,131 +6,62 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var endpointManager = EndpointManager.shared
-    @State private var isAddingEndpoint = false
-    @State private var editingEndpoint: Endpoint?
+    @Query(sort: \Endpoint.createdAt) private var endpoints: [Endpoint]
     
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text("Endpoints")) {
-                    ForEach(endpointManager.endpoints) { endpoint in
-                        VStack(alignment: .leading) {
-                            Text(endpoint.name)
-                                .font(.headline)
-                            Text(endpoint.url)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .contextMenu {
-                            Button {
-                                editingEndpoint = endpoint
-                            } label: {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                            
-                            Button(role: .destructive) {
-                                endpointManager.removeEndpoint(endpoint)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                Section("Endpoints") {
+                    ForEach(endpoints) { endpoint in
+                        NavigationLink(destination: EndpointDetailView(endpoint: endpoint)) {
+                            VStack(alignment: .leading) {
+                                Text(endpoint.name)
+                                    .font(.headline)
+                                Text(endpoint.url)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
                             }
                         }
                     }
-                    .onDelete(perform: endpointManager.removeEndpoint(at:))
+                    .onDelete { indexSet in
+                        for index in indexSet {
+                            endpointManager.removeEndpoint(endpoints[index])
+                        }
+                    }
+                    
+                    NavigationLink(destination: AddEndpointView()) {
+                        Label("Add Endpoint", systemImage: "plus.circle")
+                    }
+                }
+                
+                Section("Device") {
+                    if let token = UserDefaults.standard.string(forKey: "APNSDeviceToken") {
+                        Text("Device Token")
+                            .font(.headline)
+                        Text(token)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .textSelection(.enabled)
+                    } else {
+                        Text("Device Token not available")
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { isAddingEndpoint = true }) {
-                        Label("Add Endpoint", systemImage: "plus")
-                    }
-                }
-            }
-            .sheet(isPresented: $isAddingEndpoint) {
-                EndpointFormView(
-                    mode: .add,
-                    isPresented: $isAddingEndpoint,
-                    endpoint: nil,
-                    onSave: { name, url in
-                        endpointManager.addEndpoint(name: name, url: url)
-                    }
-                )
-            }
-            .sheet(item: $editingEndpoint) { endpoint in
-                EndpointFormView(
-                    mode: .edit,
-                    isPresented: Binding(
-                        get: { editingEndpoint != nil },
-                        set: { if !$0 { editingEndpoint = nil } }
-                    ),
-                    endpoint: endpoint,
-                    onSave: { name, url in
-                        endpointManager.updateEndpoint(endpoint, name: name, url: url)
-                        editingEndpoint = nil
-                    }
-                )
-            }
         }
-    }
-}
-
-enum EndpointFormMode {
-    case add
-    case edit
-}
-
-struct EndpointFormView: View {
-    let mode: EndpointFormMode
-    @Binding var isPresented: Bool
-    let endpoint: Endpoint?
-    let onSave: (String, String) -> Void
-    
-    @State private var name: String = ""
-    @State private var url: String = ""
-    
-    init(mode: EndpointFormMode, isPresented: Binding<Bool>, endpoint: Endpoint?, onSave: @escaping (String, String) -> Void) {
-        self.mode = mode
-        self._isPresented = isPresented
-        self.endpoint = endpoint
-        self.onSave = onSave
-        
-        if let endpoint = endpoint {
-            _name = State(initialValue: endpoint.name)
-            _url = State(initialValue: endpoint.url)
-        }
-    }
-    
-    var body: some View {
-        NavigationView {
-            Form {
-                Section {
-                    TextField("Name", text: $name)
-                    TextField("URL", text: $url)
-                        .autocapitalization(.none)
-                        .keyboardType(.URL)
-                }
-                
-                Section {
-                    Button("Save") {
-                        onSave(name, url)
-                        isPresented = false
-                    }
-                    .disabled(name.isEmpty || url.isEmpty)
-                }
-            }
-            .navigationTitle(mode == .add ? "New Endpoint" : "Edit Endpoint")
-            .navigationBarItems(
-                leading: Button("Cancel") {
-                    isPresented = false
-                }
-            )
+        .onAppear {
+            endpointManager.setModelContext(modelContext)
         }
     }
 }
 
 #Preview {
     SettingsView()
+        .modelContainer(for: [Endpoint.self, RuleSet.self])
 }

@@ -1,11 +1,24 @@
 import SwiftUI
+import SwiftData
 
 struct RuleSetDetailView: View {
     let ruleSet: RuleSet
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var endpointManager = EndpointManager.shared
     @State private var records: [PortalRecord] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
+    
+    @Query private var endpoints: [Endpoint]
+    
+    private var endpoint: Endpoint? {
+        endpoints.first { $0.id == ruleSet.endpointID }
+    }
+    
+    init(ruleSet: RuleSet) {
+        self.ruleSet = ruleSet
+        self._endpoints = Query()
+    }
     
     var body: some View {
         Group {
@@ -68,7 +81,7 @@ struct RuleSetDetailView: View {
     }
     
     private func loadRecords() {
-        guard let endpoint = endpointManager.endpoints.first else {
+        guard let endpoint = endpoint else {
             errorMessage = "No endpoint configured"
             return
         }

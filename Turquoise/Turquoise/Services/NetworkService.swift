@@ -20,11 +20,6 @@ enum NetworkError: LocalizedError {
     }
 }
 
-struct RuleSetListResponse: Codable {
-    let success: Bool
-    let data: [RuleSet]
-}
-
 class NetworkService {
     static let shared = NetworkService()
     private let turquoiseServer = "https://turquoise.szres.org"
@@ -36,7 +31,7 @@ class NetworkService {
         return URL(string: trimmedURL + path)
     }
     
-    func fetchRuleSets(from endpoint: Endpoint) async throws -> [RuleSet] {
+    func fetchRuleSets(from endpoint: Endpoint) async throws -> [NetworkRuleSet] {
         guard let url = buildURL(baseURL: endpoint.url, path: "/rulesets") else {
             print("❌ Invalid URL: \(endpoint.url)")
             throw NetworkError.invalidURL

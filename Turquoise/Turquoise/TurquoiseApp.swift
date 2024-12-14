@@ -79,6 +79,42 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
         print("❌ Failed to register for remote notifications: \(error)")
     }
+    
+    func application(_ application: UIApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void) -> Bool {
+        print("🔗 Received universal link activity")
+        
+        guard userActivity.activityType == NSUserActivityTypeBrowsingWeb else {
+            print("❌ Not a web browsing activity")
+            return false
+        }
+        
+        guard let url = userActivity.webpageURL else {
+            print("❌ No webpage URL found")
+            return false
+        }
+        print("📍 URL: \(url)")
+        
+        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+            print("❌ Could not parse URL components")
+            return false
+        }
+        print("🛣️ Path: \(components.path)")
+        print("❓ Query items: \(String(describing: components.queryItems))")
+        
+        if components.path.hasPrefix("/endpoint/"),
+           let urlParam = components.queryItems?.first(where: { $0.name == "url" })?.value,
+           let nameParam = components.queryItems?.first(where: { $0.name == "name" })?.value {
+            print("✅ Found valid endpoint parameters")
+            print("📝 Name: \(nameParam)")
+            print("🔗 URL: \(urlParam)")
+            
+            EndpointManager.shared.addEndpoint(name: nameParam, url: urlParam)
+            return true
+        }
+        
+        print("❌ Could not find required parameters")
+        return false
+    }
 }
 
 @main
@@ -90,7 +126,8 @@ struct TurquoiseApp: App {
     init() {
         do {
             modelContainer = try ModelContainer(
-                for: EndpointModel.self, RuleSetModel.self
+                for: Endpoint.self, RuleSet.self,
+                configurations: ModelConfiguration(isStoredInMemoryOnly: false)
             )
         } catch {
             fatalError("Could not initialize ModelContainer: \(error)")
