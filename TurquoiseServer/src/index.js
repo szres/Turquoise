@@ -8,29 +8,7 @@ export default {
             const url = new URL(request.url);
             const db = new NotificationDatabase(env.NOTIFICATION_DB);
             await db.initializeTables();
-            if (url.pathname === '/.well-known/apple-app-site-association') {
-                return new Response(JSON.stringify({
-                    "applinks": {
-                        "apps": [],
-                        "details": [
-                            {
-                                "appID": `${env.APNS_TEAM_ID}.org.szres.turquoise`,
-                                "paths": ["/endpoint/add*"],
-                                "components": [
-                                    {
-                                        "/": "/endpoint/add",
-                                        "comment": "Matches any URL with a path that starts with /endpoint/add"
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                }), {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-            }
+
             if (request.method === 'POST' && url.pathname === '/notify') {
                 // 处理通知请求
                 const { topic, title, message, data } = await request.json();
